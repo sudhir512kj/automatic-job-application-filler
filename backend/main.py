@@ -5,8 +5,6 @@ import httpx
 import os
 from dotenv import load_dotenv
 from services.resume_parser import ResumeParser
-from services.form_analyzer import FormAnalyzer
-from services.form_filler import FormFiller
 from services.google_forms_service import GoogleFormsService
 from logger import log_request, log_response, log_error
 
@@ -50,7 +48,6 @@ async def analyze_form(request: FormFillRequest):
     log_request("/api/analyze-form", {"form_url": request.form_url})
     
     try:
-        # Use Google Forms service instead of Selenium
         google_forms = GoogleFormsService()
         form_structure = await google_forms.get_form_structure(request.form_url)
         

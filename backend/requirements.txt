@@ -2,9 +2,7 @@ fastapi==0.115.6
 uvicorn==0.32.1
 python-multipart==0.0.20
 python-dotenv==1.0.1
-httpx==0.28.1
-selenium==4.27.1
-beautifulsoup4==4.12.3
+requests==2.32.5
 PyPDF2==3.0.1
 python-docx==1.1.2
 pydantic==2.12.3
@@ -13,10 +11,3 @@ pydantic==2.12.3
 llama-index==0.14.7
 llama-index-llms-openrouter==0.4.2
 llama-parse==0.6.54
-openai==1.109.1
-
-# Google APIs
-google-api-python-client==2.186.0
-google-auth==2.41.1
-google-auth-oauthlib==1.2.3
-google-auth-httplib2==0.2.1
