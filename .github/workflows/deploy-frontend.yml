@@ -23,6 +23,7 @@ jobs:
           npm run build
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+          CI: false
       
       - uses: netlify/actions/cli@master
         with:
