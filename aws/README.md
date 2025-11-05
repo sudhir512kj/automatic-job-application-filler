@@ -10,20 +10,29 @@
 
 ## 🚀 Deployment Steps
 
+### ✨ **Automatic Infrastructure Creation:**
+- ✅ ECR Repository
+- ✅ ECS Cluster  
+- ✅ CloudWatch Log Group
+- ✅ ECS Service (on first deploy)
+
 ### 1. Prerequisites
 ```bash
 # Install AWS CLI
 aws configure
 
-# Create ECR repository
-aws ecr create-repository --repository-name auto-form-filler --region us-east-1
+# Note: ECR repo, ECS cluster, and CloudWatch logs are created automatically
 ```
 
-### 2. Setup Secrets
+### 2. Setup Infrastructure
 ```bash
-# Update your API keys in setup-secrets.sh
-chmod +x aws/setup-secrets.sh
-./aws/setup-secrets.sh
+# Export your API keys as environment variables
+export OPENROUTER_API_KEY="your_openrouter_key_here"
+export LLAMA_CLOUD_API_KEY="your_llama_cloud_key_here"
+
+# Run infrastructure setup
+chmod +x aws/setup-infrastructure.sh
+./aws/setup-infrastructure.sh
 ```
 
 ### 3. Create IAM Roles
@@ -37,17 +46,20 @@ aws iam put-role-policy --role-name ecsTaskExecutionRole --policy-name SecretsMa
 aws iam create-role --role-name ecsTaskRole --assume-role-policy-document file://aws/trust-policy.json
 ```
 
-### 4. Update Configuration
+### 4. Configuration (Automatic)
 ```bash
-# Update these files with your AWS account details:
-# - aws/task-definition.json
-# - aws/deploy.sh
+# AWS account ID and region are automatically detected from:
+# - AWS CLI configuration (aws configure)
+# - Environment variables (AWS_DEFAULT_REGION)
+# - STS API calls (aws sts get-caller-identity)
 ```
 
 ### 5. Deploy
 ```bash
 chmod +x aws/deploy.sh
 ./aws/deploy.sh
+
+# Note: Update network configuration in deploy.sh with your VPC subnet/security group IDs
 ```
 
 ## 🛡️ Security Best Practices
