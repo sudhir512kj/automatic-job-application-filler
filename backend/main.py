@@ -14,11 +14,18 @@ load_dotenv()
 
 app = FastAPI(title="Auto Form Filling Agent", version="1.0.0")
 
+# Add environment-based CORS configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+if ALLOWED_ORIGINS == ["*"]:
+    CORS_CREDENTIALS = False
+else:
+    CORS_CREDENTIALS = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=CORS_CREDENTIALS,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
