@@ -17,7 +17,7 @@ app = FastAPI(title="Auto Form Filling Agent", version="1.0.0")
 # Add CORS configuration for Netlify frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://automatic-job-application-filler.netlify.app", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

@@ -1,4 +1,4 @@
-name: Deploy Frontend to Netlify
+name: Deploy Frontend to Vercel
 
 on:
   push:
@@ -22,12 +22,13 @@ jobs:
           npm install
           npm run build
         env:
-          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+          REACT_APP_API_URL: http://98.93.74.61:8000
           CI: false
       
-      - uses: netlify/actions/cli@master
+      - uses: amondnet/vercel-action@v25
         with:
-          args: deploy --prod --dir=frontend/build
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./frontend
+          vercel-args: '--prod'
