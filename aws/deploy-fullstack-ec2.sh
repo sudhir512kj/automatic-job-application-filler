@@ -56,13 +56,13 @@ INSTANCE_ID=$(aws ec2 describe-instances \
 if [ "$INSTANCE_ID" = "None" ] || [ -z "$INSTANCE_ID" ]; then
   echo "Creating new EC2 instance..."
   INSTANCE_ID=$(aws ec2 run-instances \
-    --image-id ami-0c398cb65a93047f2 \
+    --image-id ami-0c7217cdde317cfec \
     --count 1 \
     --instance-type t3.small \
     --key-name $KEY_NAME \
     --security-group-ids $SG_ID \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$INSTANCE_NAME}]" \
-  --iam-instance-profile Name=EC2SecretsManagerRole \
+    --iam-instance-profile Name=EC2SecretsManagerRole \
     --user-data file://aws/fullstack-user-data.sh \
     --query 'Instances[0].InstanceId' --output text)
 else
@@ -80,5 +80,5 @@ PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Rese
 echo "✅ Full Stack deployed!"
 echo "🌐 Frontend: http://$PUBLIC_IP"
 echo "🌐 Backend: http://$PUBLIC_IP:8000"
-echo "🔑 SSH: ssh -i ~/.ssh/$KEY_NAME.pem ec2-user@$PUBLIC_IP"
+echo "🔑 SSH: ssh -i ~/.ssh/$KEY_NAME.pem ubuntu@$PUBLIC_IP"
 echo "💰 Cost: ~$17/month (t3.small)"

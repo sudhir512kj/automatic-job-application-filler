@@ -17,17 +17,18 @@ Simple deployment of both frontend and backend to a single EC2 instance with fix
 ### Add API Keys
 ```bash
 # SSH into instance
-ssh -i ~/.ssh/auto-form-filler-key.pem ec2-user@[EC2-IP]
+ssh -i ~/.ssh/auto-form-filler-key.pem ubuntu@[EC2-IP]
 
 # Edit environment file
-nano auto-form-filling-agent/backend/.env
+nano auto-form-filling-agent/.env
 
 # Add your keys:
 OPENROUTER_API_KEY=your_openrouter_key_here
 LLAMA_CLOUD_API_KEY=your_llama_cloud_key_here
 
-# Restart backend
-docker restart backend
+# Restart containers
+cd auto-form-filling-agent
+sudo docker-compose restart
 ```
 
 ### Clean Up (Stop All Charges)
@@ -42,9 +43,10 @@ docker restart backend
 
 ## 🔧 What Gets Deployed
 
-- **EC2 Instance**: t3.small with Docker, Nginx, Node.js
-- **Backend**: FastAPI server on port 8000
-- **Frontend**: React app served by Nginx on port 80
+- **EC2 Instance**: t3.small Ubuntu 22.04 with Docker, Docker Compose, Nginx
+- **Backend**: FastAPI server in Docker container on port 8000
+- **Frontend**: React app in Docker container on port 3000
+- **Nginx**: Reverse proxy serving frontend on port 80
 - **Security Group**: Allows HTTP (80), API (8000), SSH (22)
 - **Key Pair**: For SSH access
 

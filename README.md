@@ -18,13 +18,15 @@ A smart application that automatically fills Google Forms using your resume data
 
 ## 🚀 Quick Start Guide
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker (Recommended) 🐳
+
+**📖 For detailed Docker setup, see [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md)**
 
 #### Prerequisites
 - Docker and Docker Compose installed
 - Git installed
 
-#### Steps
+#### Quick Steps
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
@@ -50,6 +52,9 @@ docker-compose up --build
 ✅ **Application running at:**
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+
+> 💡 **Need help with Docker?** Check the comprehensive [Docker Setup Guide](DOCKER_SETUP_GUIDE.md) for troubleshooting, development workflow, and advanced configurations.
 
 ### Option 2: Manual Setup
 
@@ -134,11 +139,11 @@ npm start
 ```
 ✅ Frontend running at: `http://localhost:3000`
 
-### Option 3: AWS ECS Deployment (Production)
+### Option 3: AWS EC2 Deployment (Production)
 
 #### Prerequisites
 - AWS CLI installed and configured
-- Docker installed
+- AWS account with appropriate permissions
 
 #### Steps
 1. Clone and setup:
@@ -147,19 +152,27 @@ git clone <your-repo-url>
 cd auto-form-filling-agent
 ```
 
-2. Setup AWS infrastructure:
+2. Deploy to AWS EC2:
 ```bash
-# Export your API keys
-export OPENROUTER_API_KEY="your_openrouter_key_here"
-export LLAMA_CLOUD_API_KEY="your_llama_cloud_key_here"
+# Make script executable
+chmod +x aws/deploy-fullstack-ec2.sh
 
-# Create infrastructure (ECR, ECS, Secrets)
-./aws/setup-infrastructure.sh
+# Deploy full stack
+./aws/deploy-fullstack-ec2.sh
 ```
 
-3. Deploy to AWS:
+3. Add API keys:
 ```bash
-./aws/deploy.sh
+# SSH into instance (use IP from deploy output)
+ssh -i ~/.ssh/auto-form-filler-key.pem ubuntu@[EC2-IP]
+
+# Add your API keys
+echo "OPENROUTER_API_KEY=your_key_here" >> auto-form-filling-agent/.env
+echo "LLAMA_CLOUD_API_KEY=your_key_here" >> auto-form-filling-agent/.env
+
+# Restart containers
+cd auto-form-filling-agent
+sudo docker-compose restart
 ```
 
 ✅ **Production deployment complete!**
@@ -204,12 +217,13 @@ auto-form-filling-agent/
 │   ├── Dockerfile                   # Frontend container
 │   └── public/
 ├── aws/
-│   ├── setup-infrastructure.sh      # AWS infrastructure setup
-│   ├── deploy.sh                    # AWS deployment script
-│   ├── iam-policies.json            # Security policies
+│   ├── deploy-fullstack-ec2.sh      # AWS EC2 deployment script
+│   ├── fullstack-user-data.sh       # EC2 initialization script
+│   ├── cleanup-all-resources.sh     # Resource cleanup script
 │   └── README.md                    # AWS deployment guide
 ├── docker-compose.yml               # Local development
 ├── .env.example                     # Environment template
+├── DOCKER_SETUP_GUIDE.md            # 🐳 Comprehensive Docker guide
 └── README.md
 ```
 
@@ -323,9 +337,10 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 🆘 Need Help?
 
-- **Issues**: Create an issue on GitHub
+- **Docker Issues**: Check [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md)
+- **GitHub Issues**: Create an issue with logs and error messages
 - **Questions**: Check existing issues first
-- **Documentation**: Read this README carefully
+- **Documentation**: Read this README and Docker guide carefully
 
 ---
 

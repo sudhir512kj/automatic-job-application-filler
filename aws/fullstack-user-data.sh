@@ -7,11 +7,23 @@ set -x
 exec > >(tee /var/log/user-data.log) 2>&1
 echo "$(date): Starting user data script"
 echo "$(date): Installing packages..."
-apt update -y
-apt install -y git awscli python3 python3-pip nginx nodejs npm curl
-# Create symlinks for convenience
-ln -sf /usr/bin/python3 /usr/local/bin/python3
-ln -sf /usr/bin/pip3 /usr/local/bin/pip3
+
+# Update system
+sudo apt update -y
+
+# Install required packages
+sudo apt install -y git awscli python3 python3-pip nginx nodejs npm curl
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker ubuntu
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
 
 echo "$(date): Packages installed successfully"
 
@@ -24,8 +36,8 @@ echo "$(date): Services started successfully"
 
 echo "$(date): Cloning repository..."
 cd /home/ubuntu
-git clone https://github.com/sudhir512kj/automatic-job-application-filler.git
-cd automatic-job-application-filler
+git clone https://github.com/sudhir512kj/auto-form-filling-agent.git
+cd auto-form-filling-agent
 echo "$(date): Repository cloned successfully"
 
 # Setup backend - Get secrets from AWS Secrets Manager
@@ -38,61 +50,37 @@ OPENROUTER_API_KEY=${OPENROUTER_KEY}
 LLAMA_CLOUD_API_KEY=${LLAMA_KEY}
 EOF
 
-# Install Python dependencies
-cd backend
-# Use the exact requirements.txt
-pip3 install -r requirements.txt
+# Use Docker Compose to run the application
+echo "$(date): Starting application with Docker Compose..."
+sudo docker-compose up -d --build
+echo "$(date): Application started successfully"
 
-# Create systemd service for backend
-cat > /etc/systemd/system/backend.service << EOF
-[Unit]
-Description=Auto Form Filler Backend
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/automatic-job-application-filler/backend
-EnvironmentFile=/home/ubuntu/automatic-job-application-filler/backend/.env
-ExecStart=/usr/bin/python3 main.py
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable backend
-systemctl start backend
-echo "$(date): Backend started successfully"
-
-echo "$(date): Setting up frontend..."
-cd frontend
-npm install
-echo "$(date): Building frontend..."
-REACT_APP_API_URL=http://localhost:8000 npm run build
-echo "$(date): Frontend built successfully"
-
-# Configure nginx for frontend
-cat > /etc/nginx/conf.d/frontend.conf << EOF
+# Configure nginx as reverse proxy
+sudo tee /etc/nginx/sites-available/default > /dev/null << EOF
 server {
     listen 80;
-    root /home/ubuntu/automatic-job-application-filler/frontend/build;
-    index index.html;
+    server_name _;
     
     location / {
-        try_files \$uri \$uri/ /index.html;
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
     
     location /api/ {
         proxy_pass http://localhost:8000/api/;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 EOF
 
-systemctl restart nginx
+sudo systemctl restart nginx
+echo "$(date): Nginx configured successfully"
 
 # Log setup completion
 echo "$(date): Full stack setup complete" >> /var/log/user-data.log
