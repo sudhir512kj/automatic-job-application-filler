@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+import time
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -62,29 +63,59 @@ async def analyze_form(request: FormFillRequest):
         log_error(str(e), "analyze-form")
         raise HTTPException(status_code=500, detail=str(e))
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+# Global task storage
+processing_tasks = {}
+
 @app.post("/api/fill-form")
 async def fill_form(
     form_url: str = Form(...),
     file: UploadFile = File(...)
 ):
-    log_request("/api/fill-form", {"form_url": form_url, "filename": file.filename})
+    task_id = f"task_{int(time.time() * 1000)}"
+    log_request("/api/fill-form", {"task_id": task_id, "form_url": form_url, "filename": file.filename})
     
     try:
-        parser = ResumeParser()
-        google_forms = GoogleFormsService()
-        
-        # Parse resume
         content = await file.read()
-        resume_data = await parser.extract_data(content, file.filename)
         
-        # Submit form directly using Google Forms API
-        result = await google_forms.submit_form_response(form_url, resume_data)
+        # Start async processing
+        processing_tasks[task_id] = {"status": "processing", "progress": 0}
+        asyncio.create_task(process_form_async(task_id, form_url, content, file.filename))
         
-        log_response("/api/fill-form", result)
-        return result
+        return {"task_id": task_id, "status": "started", "message": "Processing started"}
     except Exception as e:
         log_error(str(e), "fill-form")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/task-status/{task_id}")
+async def get_task_status(task_id: str):
+    if task_id not in processing_tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return processing_tasks[task_id]
+
+async def process_form_async(task_id: str, form_url: str, content: bytes, filename: str):
+    try:
+        processing_tasks[task_id] = {"status": "processing", "progress": 10, "message": "Parsing resume..."}
+        
+        # Parse resume in thread pool
+        parser = ResumeParser()
+        with ThreadPoolExecutor() as executor:
+            loop = asyncio.get_event_loop()
+            resume_data = await loop.run_in_executor(executor, 
+                lambda: asyncio.run(parser.extract_data(content, filename)))
+        
+        processing_tasks[task_id] = {"status": "processing", "progress": 60, "message": "Analyzing form..."}
+        
+        # Submit form
+        google_forms = GoogleFormsService()
+        result = await google_forms.submit_form_response(form_url, resume_data)
+        
+        processing_tasks[task_id] = {"status": "completed", "progress": 100, "result": result}
+        
+    except Exception as e:
+        processing_tasks[task_id] = {"status": "error", "error": str(e)}
 
 @app.get("/api/hello")
 async def hello_world():

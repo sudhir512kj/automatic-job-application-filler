@@ -22,7 +22,7 @@ jobs:
           npm install
           npm run build
         env:
-          REACT_APP_API_URL: http://98.93.74.61:8000
+          REACT_APP_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
           CI: false
       
       - uses: amondnet/vercel-action@v25

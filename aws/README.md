@@ -1,81 +1,74 @@
-# AWS ECS Deployment Guide
+# AWS EC2 Deployment Guide
 
-## 🔐 Security Features
+Simple deployment of both frontend and backend to a single EC2 instance with fixed IP.
 
-- **Secrets Manager**: API keys stored securely
-- **Non-root container**: Runs as unprivileged user
-- **IAM roles**: Minimal required permissions
-- **VPC networking**: Private subnets with ALB
-- **CloudWatch logs**: Centralized logging
+## 🚀 Quick Deploy
 
-## 🚀 Deployment Steps
-
-### ✨ **Automatic Infrastructure Creation:**
-- ✅ ECR Repository
-- ✅ ECS Cluster  
-- ✅ CloudWatch Log Group
-- ✅ ECS Service (on first deploy)
-
-### 1. Prerequisites
+### Deploy Full Stack
 ```bash
-# Install AWS CLI
-aws configure
-
-# Note: ECR repo, ECS cluster, and CloudWatch logs are created automatically
+./deploy-fullstack-ec2.sh
 ```
 
-### 2. Setup Infrastructure
-```bash
-# Export your API keys as environment variables
-export OPENROUTER_API_KEY="your_openrouter_key_here"
-export LLAMA_CLOUD_API_KEY="your_llama_cloud_key_here"
+**Output:**
+- Frontend: `http://[EC2-IP]`
+- Backend: `http://[EC2-IP]:8000`
+- SSH: `ssh -i ~/.ssh/auto-form-filler-key.pem ec2-user@[EC2-IP]`
 
-# Run infrastructure setup
-chmod +x aws/setup-infrastructure.sh
-./aws/setup-infrastructure.sh
+### Add API Keys
+```bash
+# SSH into instance
+ssh -i ~/.ssh/auto-form-filler-key.pem ec2-user@[EC2-IP]
+
+# Edit environment file
+nano auto-form-filling-agent/backend/.env
+
+# Add your keys:
+OPENROUTER_API_KEY=your_openrouter_key_here
+LLAMA_CLOUD_API_KEY=your_llama_cloud_key_here
+
+# Restart backend
+docker restart backend
 ```
 
-### 3. Create IAM Roles
+### Clean Up (Stop All Charges)
 ```bash
-# Create execution role
-aws iam create-role --role-name ecsTaskExecutionRole --assume-role-policy-document file://aws/trust-policy.json
-aws iam attach-role-policy --role-name ecsTaskExecutionRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-aws iam put-role-policy --role-name ecsTaskExecutionRole --policy-name SecretsManagerAccess --policy-document file://aws/iam-policies.json
-
-# Create task role
-aws iam create-role --role-name ecsTaskRole --assume-role-policy-document file://aws/trust-policy.json
+./cleanup-all-resources.sh
 ```
 
-### 4. Configuration (Automatic)
-```bash
-# AWS account ID and region are automatically detected from:
-# - AWS CLI configuration (aws configure)
-# - Environment variables (AWS_DEFAULT_REGION)
-# - STS API calls (aws sts get-caller-identity)
-```
+## 💰 Cost
 
-### 5. Deploy
-```bash
-chmod +x aws/deploy.sh
-./aws/deploy.sh
+- **Running**: ~$17/month (t3.small EC2 instance)
+- **After cleanup**: $0/month
 
-# Note: Update network configuration in deploy.sh with your VPC subnet/security group IDs
-```
+## 🔧 What Gets Deployed
 
-## 🛡️ Security Best Practices
+- **EC2 Instance**: t3.small with Docker, Nginx, Node.js
+- **Backend**: FastAPI server on port 8000
+- **Frontend**: React app served by Nginx on port 80
+- **Security Group**: Allows HTTP (80), API (8000), SSH (22)
+- **Key Pair**: For SSH access
 
-1. **API Keys**: Never hardcode in containers
-2. **Network**: Use private subnets + ALB
-3. **Monitoring**: Enable CloudWatch + CloudTrail
-4. **Updates**: Regular security patches
-5. **Access**: Least privilege IAM policies
+## 🗑️ What Gets Cleaned Up
 
-## 📊 Monitoring
+- EC2 instances
+- Security groups  
+- Key pairs
+- Elastic IPs
+- ECS services/clusters
+- Load balancers
+- ECR repositories
+- CloudWatch logs
+- Secrets Manager secrets
 
-```bash
-# View logs
-aws logs tail /ecs/auto-form-filler --follow
+## 🔒 Security Features
 
-# Check service status
-aws ecs describe-services --cluster auto-form-filler-cluster --services auto-form-filler-service
-```
+- SSH key-based access only
+- Security groups restrict access to necessary ports
+- Environment variables for API keys
+- Docker containerization
+
+## 📁 Files
+
+- `deploy-fullstack-ec2.sh` - Main deployment script
+- `fullstack-user-data.sh` - EC2 initialization script
+- `cleanup-all-resources.sh` - Resource cleanup script

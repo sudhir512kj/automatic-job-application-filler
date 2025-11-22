@@ -3,13 +3,15 @@ import { Container, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstr
 import FileUpload from './components/FileUpload';
 import FormInput from './components/FormInput';
 import ResultDisplay from './components/ResultDisplay';
-import { fillForm } from './services/api';
+import { fillForm, pollTaskStatus } from './services/api';
 
 function App() {
   const [file, setFile] = useState(null);
   const [formUrl, setFormUrl] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
 
   // Load previous form URL from localStorage on component mount
   useEffect(() => {
@@ -34,16 +36,28 @@ function App() {
     }
 
     setLoading(true);
+    setProgress(0);
+    setProgressMessage('Starting...');
+    
     try {
+      // Start async processing
       const response = await fillForm(file, formUrl);
-      console.log('API Response:', response.data);
-      // Backend now returns result directly
-      setResult(response.data);
+      const { task_id } = response.data;
+      
+      // Poll for results
+      const result = await pollTaskStatus(task_id, (prog, msg) => {
+        setProgress(prog);
+        setProgressMessage(msg || 'Processing...');
+      });
+      
+      setResult(result);
     } catch (error) {
       console.error('API Error:', error);
       setResult({ success: false, error: error.message });
     } finally {
       setLoading(false);
+      setProgress(0);
+      setProgressMessage('');
     }
   };
 
@@ -84,7 +98,7 @@ function App() {
                   {loading ? (
                     <>
                       <Spinner animation="border" size="sm" className="me-2" />
-                      Processing...
+                      {progressMessage} ({progress}%)
                     </>
                   ) : (
                     '🚀 Submit Form Directly'

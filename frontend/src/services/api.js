@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000,
+  timeout: 120000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -36,6 +36,35 @@ export const fillForm = async (file, formUrl) => {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    timeout: 10000, // Short timeout for task start
+  });
+};
+
+export const getTaskStatus = async (taskId) => {
+  return api.get(`/task-status/${taskId}`);
+};
+
+export const pollTaskStatus = async (taskId, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const poll = async () => {
+      try {
+        const response = await getTaskStatus(taskId);
+        const { status, progress, result, error, message } = response.data;
+        
+        if (onProgress) onProgress(progress, message);
+        
+        if (status === 'completed') {
+          resolve(result);
+        } else if (status === 'error') {
+          reject(new Error(error));
+        } else {
+          setTimeout(poll, 2000); // Poll every 2 seconds
+        }
+      } catch (err) {
+        reject(err);
+      }
+    };
+    poll();
   });
 };
 
